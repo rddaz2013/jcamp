@@ -179,18 +179,16 @@ def jcamp_read(filehandle):
             #print(n, xstart[n], xstart[n+1], xnum[n], xstart[n]+(dx*arange(xnum[n])))
 
         ## The last line must be treated separately.
-        if (xnum[len(xnum)-1] > 1):
-            dx = (jcamp_dict['lastx'] - xstart[len(xnum)-1]) / (xnum[len(xnum)-1] - 1.0)
-            x = append(x, xstart[len(xnum)-1]+(dx*arange(xnum[len(xnum)-1])))
-            #print(n, xstart[len(xnum)-1]+(dx*arange(xnum[len(xnum)-1])))
+        if xnum[-1] > 1:
+            dx = (jcamp_dict['lastx'] - xstart[len(xnum)-1]) / (xnum[-1] - 1.0)
+            x = append(x, xstart[len(xnum)-1] + dx * arange(xnum[-1]))
+                    #print(n, xstart[len(xnum)-1]+(dx*arange(xnum[len(xnum)-1])))
         else:
             x = append(x, jcamp_dict['lastx'])
 
-        y = array([float(yval) for yval in y])
     else:
         x = array([float(xval) for xval in x])
-        y = array([float(yval) for yval in y])
-
+    y = array([float(yval) for yval in y])
     ## The "xfactor" and "yfactor" variables contain any scaling information that may need to be applied
     ## to the data. Go ahead and apply them.
     if ('xfactor' in jcamp_dict):
@@ -277,7 +275,7 @@ def JCAMP_calc_xsec(jcamp_dict, wavemin=None, wavemax=None, skip_nonquant=True, 
 
     ## Determine the effective path length "ell" of the measurement chamber, in meters.
     if ('path length' in jcamp_dict):
-        (val,unit) = jcamp_dict['path length'].lower().split()[0:2]
+        (val,unit) = jcamp_dict['path length'].lower().split()[:2]
         if (unit == 'cm'):
             ell = float(val) / 100.0
         elif (unit == 'm'):
@@ -293,12 +291,11 @@ def JCAMP_calc_xsec(jcamp_dict, wavemin=None, wavemax=None, skip_nonquant=True, 
 
     assert(alen(x) == alen(y))
 
-    if ('npoints' in jcamp_dict):
-        if (alen(x) != jcamp_dict['npoints']):
-            npts_retrieved = str(alen(x))
-            msg = '"' + jcamp_dict['title'] + '": Number of data points retrieved (' + npts_retrieved + \
-                  ') does not equal the expected length (npoints = ' + str(jcamp_dict['npoints']) + ')!'
-            raise ValueError(msg)
+    if ('npoints' in jcamp_dict) and (alen(x) != jcamp_dict['npoints']):
+        npts_retrieved = str(alen(x))
+        msg = '"' + jcamp_dict['title'] + '": Number of data points retrieved (' + npts_retrieved + \
+              ') does not equal the expected length (npoints = ' + str(jcamp_dict['npoints']) + ')!'
+        raise ValueError(msg)
 
     ## For each gas, manually define the pressure "p" at which the measurement was taken (in units of mmHg).
     ## These values are obtained from the NIST Infrared spectrum database, which for some reason did not
@@ -339,18 +336,17 @@ def is_float(s):
         A single boolean or list of boolean values indicating whether each input can be converted into a float.
     '''
 
-    if isinstance(s,tuple) or isinstance(s,list):
+    if isinstance(s, (tuple, list)):
         if not all(isinstance(i, string_types) for i in s):
             raise TypeError("Input {} is not a list of strings".format(s))
         if (len(s) == 0):
             raise ValueError('Input {} is empty'.format(s))
-        else:
-            bool = list(True for i in range(0,len(s)))
-            for i in range(0,len(s)):
-                try:
-                    float(s[i])
-                except ValueError:
-                    bool[i] = False
+        bool = [True for i in range(len(s))]
+        for i in range(len(s)):
+            try:
+                float(s[i])
+            except ValueError:
+                bool[i] = False
         return(bool)
     else:
         if not isinstance(s, string_types):
@@ -367,11 +363,9 @@ def get_value(num, is_dif, vals):
     n = float(num)
     if is_dif:
         lastval = vals[-1]
-        val = n + lastval
+        return n + lastval
     else:
-        val = n
-
-    return(val)
+        return n
 
 ##=====================================================================================================
 def jcamp_parse(line):
