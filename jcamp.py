@@ -18,8 +18,8 @@ spectra plotted from data in repository folders.
 __authors__ = 'Nathan Hagen'
 __license__ = 'MIT/X11 License'
 __contact__ = 'Nathan Hagen <and.the.light.shattered@gmail.com>'
-__all__     = ['jcamp_readfile', 'parse_longdate', 'jcamp_read', 'jcamp_calc_xsec', 'is_float', 'get_value', 'jcamp_parse',
-               'jcamp_writefile', 'jcamp_write']
+__all__     = ['readfile', 'parse_longdate', 'read', 'calc_xsec', 'is_float', 'get_value', 'parse',
+               'writefile', 'write']
 __version__ = '1.2.2'
 
 ## In SQZ_digits, '+' or '-' is for PAC, ',' for CSV.
@@ -43,9 +43,9 @@ FRACTIONAL_SECONDS_PATTERN = re.compile(
 )
 
 ##=====================================================================================================
-def jcamp_readfile(filename):
+def readfile(filename):
     '''
-    Open a JDX-format file for reading, and call `jcamp_read` to parse it into a dictionary.
+    Open a JDX-format file for reading, and call `read()` to parse it into a dictionary.
 
     Parameters
     ----------
@@ -59,7 +59,7 @@ def jcamp_readfile(filename):
     '''
 
     with open(filename, 'rb') as filehandle:
-        datadict = jcamp_read(filehandle)
+        datadict = read(filehandle)
     datadict['filename'] = filename
     return(datadict)
 
@@ -104,7 +104,7 @@ def parse_longdate(date_string: str) -> datetime.datetime:
         raise ValueError("Failed to parse the date string: {}".format(date_string))
 
 ##=====================================================================================================
-def jcamp_read(filehandle):
+def read(filehandle):
     '''
     Read a JDX-format file, and return a dictionary containing the header info, a 1D numpy vectors `x` for the
     abscissa information (e.g. wavelength or wavenumber) and `y` for the ordinate information (e.g. transmission).
@@ -154,7 +154,7 @@ def jcamp_read(filehandle):
             ## Detect the end of the compound block.
             if line.upper().startswith('##END'):
                 ## Process the entire block and put it into the children array.
-                jcamp_dict['children'].append(jcamp_read(compound_block_contents))
+                jcamp_dict['children'].append(read(compound_block_contents))
                 in_compound_block = False
                 compound_block_contents = []
             continue
@@ -230,7 +230,7 @@ def jcamp_read(filehandle):
                     ASDF_format_detected = True
                 else:
                     ASDF_format_detected = False
-            datavals = jcamp_parse(line)
+            datavals = parse(line)
 
             ## X-check: Is the calculated x-value the same as in first value in line?
             ##          Actual implementation checks whether difference is below 1.
@@ -280,7 +280,7 @@ def jcamp_read(filehandle):
             ## If the line does not start with '##' or '$$' then it should be a data line.
             ## The pair of lines below involve regex splitting on floating point numbers and integers. We can't just
             ## split on spaces because JCAMP allows minus signs to replace spaces in the case of negative numbers.
-            datavals = jcamp_parse(line)
+            datavals = parse(line)
             datalist += datavals
 
     if ('xydata' in jcamp_dict) and (jcamp_dict['xydata'] == '(X++(Y..Y))'):
@@ -314,7 +314,7 @@ def jcamp_read(filehandle):
     return(jcamp_dict)
 
 ##=====================================================================================================
-def jcamp_calc_xsec(jcamp_dict, wavemin=None, wavemax=None, skip_nonquant=True, debug=False):
+def calc_xsec(jcamp_dict, wavemin=None, wavemax=None, skip_nonquant=True, debug=False):
     '''
     Taking as input a JDX file, extract the spectrum information and transform the absorption spectrum from existing
     units to absorption cross-section.
@@ -484,7 +484,7 @@ def get_value(num, is_dif, vals):
     return(val)
 
 ##=====================================================================================================
-def jcamp_parse(line):
+def parse(line):
     line = line.strip()
 
     datavals = []
@@ -551,7 +551,7 @@ def jcamp_parse(line):
     return(datavals)
 
 ##=====================================================================================================
-def jcamp_writefile(filename, jcamp_dict_input, linewidth=75):
+def writefile(filename, jcamp_dict_input, linewidth=75):
     '''
     Write a JDX-format file for a given data dictionary.
 
@@ -570,12 +570,12 @@ def jcamp_writefile(filename, jcamp_dict_input, linewidth=75):
     jcamp_dict['filename'] = filename
 
     with open(filename, 'w') as filehandle:
-        jcamp_str = jcamp_write(jcamp_dict, linewidth=linewidth)
+        jcamp_str = write(jcamp_dict, linewidth=linewidth)
         filehandle.write(jcamp_str)
     return
 
 ##=====================================================================================================
-def jcamp_write(jcamp_dict, linewidth=75):
+def write(jcamp_dict, linewidth=75):
     '''
     Convert a dictionary into a JDX-format string for easy writing to a file. At a minimum, the input dictionary must
     contain the keys 'x' and 'y' for the data, and these two vectors must have the same length.
@@ -664,17 +664,17 @@ def jcamp_write(jcamp_dict, linewidth=75):
 if (__name__ == '__main__'):
     import matplotlib.pyplot as plt
     filename = './data/infrared_spectra/ethylene.jdx'
-    jcamp_dict = jcamp_readfile(filename)
+    jcamp_dict = readfile(filename)
     plt.plot(jcamp_dict['x'], jcamp_dict['y'])
     plt.title(filename)
     plt.xlabel(jcamp_dict['xunits'])
     plt.ylabel(jcamp_dict['yunits'])
 
     ## Example of writing a Python/Numpy dictionary to a JCAMP-DX file.
-    jcamp_writefile('temp.jdx', jcamp_dict, linewidth=45)
+    writefile('temp.jdx', jcamp_dict, linewidth=45)
 
     ## Example of converting an optical spectrum into absorption cross-section units.
-    jcamp_calc_xsec(jcamp_dict, skip_nonquant=False, debug=False)
+    calc_xsec(jcamp_dict, skip_nonquant=False, debug=False)
     plt.figure()
     plt.plot(jcamp_dict['wavelengths'], jcamp_dict['xsec'])
     plt.title(filename)
@@ -683,14 +683,14 @@ if (__name__ == '__main__'):
 
     filename = './data/uvvis_spectra/toluene.jdx'
     plt.figure()
-    jcamp_dict = jcamp_readfile(filename)
+    jcamp_dict = readfile(filename)
     plt.plot(jcamp_dict['x'], jcamp_dict['y'], 'r-')
     plt.title(filename)
     plt.xlabel(jcamp_dict['xunits'])
     plt.ylabel(jcamp_dict['yunits'])
 
     filename = './data/mass_spectra/ethanol_ms.jdx'
-    jcamp_dict = jcamp_readfile(filename)
+    jcamp_dict = readfile(filename)
     plt.figure()
     for n in arange(len(jcamp_dict['x'])):
         plt.plot((jcamp_dict['x'][n],jcamp_dict['x'][n]), (0.0, jcamp_dict['y'][n]), 'm-', linewidth=2.0)
@@ -699,7 +699,7 @@ if (__name__ == '__main__'):
     plt.ylabel(jcamp_dict['yunits'])
 
     filename = './data/raman_spectra/tannic_acid.jdx'
-    jcamp_dict = jcamp_readfile(filename)
+    jcamp_dict = readfile(filename)
     plt.figure()
     plt.plot(jcamp_dict['x'], jcamp_dict['y'], 'k-')
     plt.title(filename)
@@ -707,7 +707,7 @@ if (__name__ == '__main__'):
     plt.ylabel(jcamp_dict['yunits'])
 
     filename = './data/neutron_scattering_spectra/emodine.jdx'
-    jcamp_dict = jcamp_readfile(filename)
+    jcamp_dict = readfile(filename)
     plt.figure()
     plt.plot(jcamp_dict['x'], jcamp_dict['y'], 'k-')
     plt.title(filename)
@@ -715,7 +715,7 @@ if (__name__ == '__main__'):
     plt.ylabel(jcamp_dict['yunits'])
 
     filename = './data/infrared_spectra/example_compound_file.jdx'
-    jcamp_dict = jcamp_readfile(filename)
+    jcamp_dict = readfile(filename)
     plt.figure()
     for c in jcamp_dict['children']:
         plt.plot(c['x'], c['y'])
@@ -724,7 +724,7 @@ if (__name__ == '__main__'):
     plt.title(filename)
 
     filename = './data/infrared_spectra/example_multiline_datasets.jdx'
-    jcamp_dict = jcamp_readfile(filename)
+    jcamp_dict = readfile(filename)
     plt.figure()
     plt.plot(jcamp_dict['x'], jcamp_dict['y'])
     plt.title(filename)
