@@ -16,7 +16,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
 ]
 requires-python = ">=3.8"
-dependencies = ["datetime", "numpy", "re", "pdb"]
+dependencies = ["numpy"]
 keywords = ["jcamp", "jcamp-dx", "spectra"]
 
 [project.urls]
