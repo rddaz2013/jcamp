@@ -1,7 +1,8 @@
 import unittest
 from numpy import amin, amax, ndarray
 import os
-from jcamp import calc_xsec, readfile, parse
+import jcamp as jc
+#import calc_xsec, readfile, parse
 import pdb
 
 class TestJcamp(unittest.TestCase):
@@ -38,7 +39,7 @@ class TestJcamp(unittest.TestCase):
             for filename in files:
                 full_filename = os.path.join(root, filename)
                 print(full_filename)
-                jcamp_dict = jcamp_readfile(full_filename)
+                jcamp_dict = jc.readfile(full_filename)
                 self.test_xy_minmax(jcamp_dict)
 
     def test_read_raman(self):
@@ -46,7 +47,7 @@ class TestJcamp(unittest.TestCase):
             for filename in files:
                 full_filename = os.path.join(root, filename)
                 print(full_filename)
-                jcamp_dict = jcamp_readfile(full_filename)
+                jcamp_dict = jc.readfile(full_filename)
                 self.test_xy_minmax(jcamp_dict)
 
     def test_read_hnmr_spectra(self):
@@ -54,7 +55,7 @@ class TestJcamp(unittest.TestCase):
             for filename in files:
                 full_filename = os.path.join(root, filename)
                 print(full_filename)
-                jcamp_dict = jcamp_readfile(full_filename)
+                jcamp_dict = jc.readfile(full_filename)
                 self.test_xy_minmax(jcamp_dict)
 
     def test_read_uv(self):
@@ -62,7 +63,7 @@ class TestJcamp(unittest.TestCase):
             for filename in files:
                 full_filename = os.path.join(root, filename)
                 print(full_filename)
-                jcamp_dict = jcamp_readfile(full_filename)
+                jcamp_dict = jc.readfile(full_filename)
                 self.test_xy_minmax(jcamp_dict)
 
     def test_read_mass(self):
@@ -70,40 +71,40 @@ class TestJcamp(unittest.TestCase):
             for filename in files:
                 full_filename = os.path.join(root, filename)
                 print(full_filename)
-                jcamp_dict = jcamp_readfile(full_filename)
+                jcamp_dict = jc.readfile(full_filename)
                 self.test_xy_minmax(jcamp_dict)
 
     def test_line_parse(self):
         ## Tests from http://wwwchem.uwimona.edu.jm/software/jcampdx.html
         line = "99 98 97 96 98 93"
-        self.assertEqual(jcamp_parse(line), [99, 98, 97, 96, 98, 93])
+        self.assertEqual(jc.parse(line), [99, 98, 97, 96, 98, 93])
         line = "99,98,97,96,98,93"
-        self.assertEqual(jcamp_parse(line), [99, 98, 97, 96, 98, 93])
+        self.assertEqual(jc.parse(line), [99, 98, 97, 96, 98, 93])
         line = "99+98+97+96+98+93"
-        self.assertEqual(jcamp_parse(line), [99, 98, 97, 96, 98, 93])
+        self.assertEqual(jc.parse(line), [99, 98, 97, 96, 98, 93])
         line = "99I8I7I6I8I3"
-        self.assertEqual(jcamp_parse(line), [99, 98, 97, 96, 98, 93])
+        self.assertEqual(jc.parse(line), [99, 98, 97, 96, 98, 93])
         line = "99jjjKn"
-        self.assertEqual(jcamp_parse(line), [99, 98, 97, 96, 98, 93])
+        self.assertEqual(jc.parse(line), [99, 98, 97, 96, 98, 93])
         line = "99jUKn"
-        self.assertEqual(jcamp_parse(line), [99, 98, 97, 96, 98, 93])
+        self.assertEqual(jc.parse(line), [99, 98, 97, 96, 98, 93])
 
     def test_spec_line_parse(self):
         # Tests from http://www.jcamp-dx.org/drafts/JCAMP6_2b%20Draft.pdf
         line = "1000 2000 2001 2002 2003 2003 2003"
-        self.assertEqual(jcamp_parse(line), [1000, 2000, 2001, 2002, 2003, 2003, 2003])
+        self.assertEqual(jc.parse(line), [1000, 2000, 2001, 2002, 2003, 2003, 2003])
         line = "+1000+2000+2001+2002+2003+2003+2003"
-        self.assertEqual(jcamp_parse(line), [1000, 2000, 2001, 2002, 2003, 2003, 2003])
+        self.assertEqual(jc.parse(line), [1000, 2000, 2001, 2002, 2003, 2003, 2003])
         line = "A000B000B001B002B003B003B003"
-        self.assertEqual(jcamp_parse(line), [1000, 2000, 2001, 2002, 2003, 2003, 2003])
+        self.assertEqual(jc.parse(line), [1000, 2000, 2001, 2002, 2003, 2003, 2003])
         line = "A000J000JJJ%%"
-        self.assertEqual(jcamp_parse(line), [1000, 2000, 2001, 2002, 2003, 2003, 2003])
+        self.assertEqual(jc.parse(line), [1000, 2000, 2001, 2002, 2003, 2003, 2003])
         line = "A000J000JU%%"
-        self.assertEqual(jcamp_parse(line), [1000, 2000, 2001, 2002, 2003, 2003, 2003])
+        self.assertEqual(jc.parse(line), [1000, 2000, 2001, 2002, 2003, 2003, 2003])
 
     def test_jcamp_readfile_dict(self):
         filename = './data/infrared_spectra/methane.jdx'
-        jcamp_dict = jcamp_readfile(filename)
+        jcamp_dict = jc.readfile(filename)
         self.assertEqual(jcamp_dict['origin'], 'DOW CHEMICAL COMPANY')
         self.assertEqual(jcamp_dict['deltax'], 0.935748)
         self.assertEqual(jcamp_dict['sampling procedure'], 'TRANSMISSION')
@@ -141,8 +142,8 @@ class TestJcamp(unittest.TestCase):
 
     def test_jcamp_calc_xsec(self):
         filename = './data/infrared_spectra/methane.jdx'
-        jcamp_dict = jcamp_readfile(filename)
-        jcamp_calc_xsec(jcamp_dict)
+        jcamp_dict = jc.readfile(filename)
+        jc.calc_xsec(jcamp_dict)
         self.assertTrue('xsec' in jcamp_dict)
 
 
