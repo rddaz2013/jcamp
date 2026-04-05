@@ -2,7 +2,7 @@
 # See the LICENSE.rst file for licensing information.
 
 import datetime
-from numpy import array, append, arange, logical_not, log10, nan, isnan, linspace, amax, amin
+from numpy import array, append, arange, logical_not, log10, nan, isnan, linspace, amax, amin, isclose
 import re
 import pdb
 
@@ -222,8 +222,9 @@ def read(filehandle):
             ## If the line does not start with '##' or '$$' then it should be a data line.
             ## The pair of lines below involve regex splitting on floating point numbers and integers. We can't just
             ## split on spaces because JCAMP allows minus signs to replace spaces in the case of negative numbers.
+            ## Also, DIFDUP and SQZ encoded data doesn't use spaces at all.
 
-            ## Check the first data line only if ASDF format is implemented.
+            ## Check the first data line only if ASDF (ASCII squeezed difference form) format is implemented.
             if not len(y):
                 ## Check if the format is AFFN or ASDF:
                 if any(l in DIF_digits for l in line):
@@ -241,8 +242,7 @@ def read(filehandle):
                 if (abs(datavals[0] - next_x) > 1):
                     print(f"X-Check failed. Expected value is {datavals[0]} but {next_x} has been calculated.")
 
-            ## Only for ASDF format: Do y-checks (to ensure line integrity) and
-            ##                       do y-value aggregation appropriately
+            ## Only for ASDF format: Do y-checks (to ensure line integrity) and do y-value aggregation appropriately.
             if ASDF_format_detected:
                 if len(y):
                     line_last = (datavals[0], len(datavals[2:]))
@@ -495,10 +495,10 @@ def parse(line):
 
     ## If there are any coded digits, then replace the codes with the appropriate numbers.
     ## 'DUP_digits': ("duplicate suppression") replaces all but first value if two or more adjacent y-values
-    #                are identical
+    ##               are identical.
     ## 'DIF_digits': ("difference form") replace delimiter, leading digit and sign of the difference between
-    ##               adjacent values
-    ## 'SQZ_digits': ("squeezed form") replace delimiter, leading digit and sign
+    ##               adjacent values.
+    ## 'SQZ_digits': ("squeezed form") replace delimiter, leading digit and sign.
     DUP_set = set(DUP_digits)
 
     if any(c in DUP_set for c in line):
@@ -520,8 +520,9 @@ def parse(line):
         line = "".join(newline)
 
     DIF = False
+    sci_fmt = is_scientific_notation(line)
     for c in line:
-        if c.isdigit() or (c == "."):
+        if c.isdigit() or (c == ".") or (sci_fmt and c in ('Ee+-')):
             num += c
         elif (c == ' '):
             DIF = False
@@ -659,10 +660,47 @@ def write(jcamp_dict, linewidth=75):
     return(js)
 
 ## =================================================================================================
+def is_scientific_notation(line):
+    if ('E' not in line) and ('e' not in line):
+        return(False)
+
+    ## If any of the SQZ non-numeric digits appear, other than E, then we know that this is SQZ format
+    ## and not scientific notation
+    SQZ_nonnumeric_digits = ['@','A','B','C','D','F','G','H','I','a','b','c','d','f','g','h','i',',']
+    if any(c in SQZ_nonnumeric_digits for c in line):
+        return(False)
+
+    ## Data that is formatted in scientific notation uses spaces to separate the numbers. So we know
+    ## that if there are two or more spaces, then we are not using SQZ format but rather scientific
+    ## notation format in the line. If there is only one space, then the result is ambiguous --- the
+    ## initial row may just be X-data, while the Y-data is SQZ formatted.
+    words = line.split()
+    numwords = len(words)
+    if (numwords > 2):
+        return(True)
+    elif (numwords > 1):
+        if str_is_number(words[1].strip()):
+            return(True)
+    elif (numwords == 1):
+        if str_is_number(line.strip()):
+            return(True)
+
+    return(False)
+
+## =================================================================================================
+def str_is_number(s):
+    try:
+        float(s)
+        return(True)
+    except ValueError:
+        return(False)
+
+## =================================================================================================
 ## =================================================================================================
 
 if (__name__ == '__main__'):
     import matplotlib.pyplot as plt
+
     filename = './data/infrared_spectra/ethylene.jdx'
     jcamp_dict = readfile(filename)
     plt.plot(jcamp_dict['x'], jcamp_dict['y'])

@@ -1,5 +1,5 @@
 import unittest
-from numpy import amin, amax, ndarray
+from numpy import amin, amax, ndarray, isclose
 import os
 import jcamp as jc
 #import calc_xsec, readfile, parse
@@ -145,6 +145,12 @@ class TestJcamp(unittest.TestCase):
         jcamp_dict = jc.readfile(filename)
         jc.calc_xsec(jcamp_dict)
         self.assertTrue('xsec' in jcamp_dict)
+
+    def test_read_scientific_notation(self):
+        filename = './data/test/scientific_notation_example.jdx'
+        jcamp_dict = jc.readfile(filename)
+        self.test_xy_minmax(jcamp_dict)
+        self.assertTrue(any(isclose(jcamp_dict['y'], 4.6e-5)))
 
 
 if __name__ == '__main__':
