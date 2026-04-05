@@ -1,7 +1,7 @@
 import unittest
 from numpy import amin, amax, ndarray
 import os
-from jcamp import jcamp_calc_xsec, jcamp_readfile, jcamp_parse
+from jcamp import calc_xsec, readfile, parse
 import pdb
 
 class TestJcamp(unittest.TestCase):
